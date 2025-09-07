@@ -1,5 +1,7 @@
 use std::env;
 
+//use command hyprclt dispatch movetoworkspace {workspace} for this all to work
+
 fn main() {
     let hyprland_instance_signature = env::var("HYPRLAND_INSTANCE_SIGNATURE")
         .expect("Hyprland must be running");
