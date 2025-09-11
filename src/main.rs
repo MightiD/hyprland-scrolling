@@ -1,7 +1,7 @@
 use std::env;
 use std::process::Command;
 
-fn getCurrentWorkspace() -> String {
+fn get_current_workspace() -> String {
     let command = Command::new("hyprctl")
         .arg("activeworkspace")
         .output()
@@ -22,7 +22,15 @@ fn main() {
         .expect("Hyprland must be running");
     println!("{hyprland_instance_signature}");
 
-    let current_workspace = getCurrentWorkspace();
+    let mut current_workspace: i8 = get_current_workspace().parse().expect("Not a valid number");
+    current_workspace += 1;
     println!("{}", current_workspace);
 
+    Command::new("hyprctl")
+        .arg("dispatch")
+        //.arg("movetoworkspace")
+        .arg("workspace")
+        .arg(current_workspace.to_string())
+        .spawn()
+        .expect("Failed to run hyprctl");
 }
