@@ -47,7 +47,7 @@ fn get_current_workspace() -> String {
     String::from(s.split_whitespace().nth(2).unwrap())
 }
 
-fn move_window(target: i8) {
+fn move_window(target: u8) {
     Command::new("hyprctl")
         .arg("dispatch")
         .arg("movetoworkspace") //move window to workspace
@@ -56,7 +56,7 @@ fn move_window(target: i8) {
         .expect("Failed to run hyprctl");
 }
 
-fn move_focus(target: i8) {
+fn move_focus(target: u8) {
     Command::new("hyprctl")
         .arg("dispatch")
         .arg("workspace") //move focus to workspace
@@ -86,18 +86,57 @@ fn main() {
     let config: Config = serde_json::from_str(&contents)
         .expect("Couldn't parse config file at ~/.config/hypr/scrolling.json");
 
-    dbg!(&config);
+    let mut current_workspace: u8 = get_current_workspace().parse().expect("Not a valid number");
 
-    let mut current_workspace: i8 = get_current_workspace().parse().expect("Not a valid number");
+    let mut target_workspace: u8 = current_workspace;
+
+    let mut pos: (usize, usize) = {
+        let mut result = (0, 0);
+        let mut found = false;
+        for (i, group) in config.groups.iter().enumerate() {
+            for (j, workspace) in group.iter().enumerate() {
+                if *workspace as usize == current_workspace as usize {
+                    result = (i, j);
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if !found{
+            eprintln!("Couldnt find current workspace in configuration");
+            std::process::exit(1);
+        }
+        result
+    };
+
     match args.direction {
-        Direction::Up => current_workspace += 1,
-        Direction::Down => current_workspace -= 1,
+        Direction::Up => {
+            //i cant be bothered to fix the errors that come with just out of bounds indexing
+            //it isnt meant to do anything anyway if the index is out of bounds
+            pos.1 += 1;
+            target_workspace = match config.groups[pos.0].get(pos.1) {
+                Some(ws) => *ws,
+                None => {
+                    eprintln!("No higher workspace to move to on this display");
+                    std::process::exit(0);
+                }
+            };
+        },
+        Direction::Down => {
+            pos.1 -= 1;
+            target_workspace = match config.groups[pos.0].get(pos.1) {
+                Some(ws) => *ws,
+                None => {
+                    eprintln!("No higher workspace to move to on this display");
+                    std::process::exit(0);
+                }
+            };
+        },
     }
     
     match args.mode {
-        Mode::MoveWindow => move_window(current_workspace),
-        Mode::MoveFocus => move_focus(current_workspace),
+        Mode::MoveWindow => move_window(target_workspace),
+        Mode::MoveFocus => move_focus(target_workspace),
     }
-    println!("{}", current_workspace);
 
 }
