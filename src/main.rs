@@ -1,6 +1,11 @@
 use clap::{Parser, ValueEnum};
+use std::path::PathBuf;
 use std::env;
 use std::process::Command;
+use std::fs::File;
+use std::io::Read;
+use serde::Deserialize;
+use serde_json;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Mode {
@@ -20,6 +25,11 @@ struct Cli {
     mode: Mode,
     #[arg(required = true)]
     direction: Direction,
+}
+
+#[derive(Debug, Deserialize)]
+struct Config {
+    groups: Vec<Vec<u8>>,
 }
 
 fn get_current_workspace() -> String {
@@ -60,11 +70,23 @@ fn move_focus(target: i8) {
 fn main() {
     let hyprland_instance_signature =
         env::var("HYPRLAND_INSTANCE_SIGNATURE").expect("Hyprland must be running");
-    println!("{hyprland_instance_signature}");
+    println!("Hyprland Instance Signature: {hyprland_instance_signature}");
+
+    let home_dir = env::var("HOME").expect("Home directory not set");
 
     let args = Cli::parse();
 
-    dbg!(&args);
+    let path = PathBuf::from(home_dir).join(".config/hypr/scrolling.json");
+
+    let mut file = File::open(path)
+        .expect("Couldn't open file at ~/.config/hypr/scrolling.json");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .expect("Failed to read file");
+    let config: Config = serde_json::from_str(&contents)
+        .expect("Couldn't parse config file at ~/.config/hypr/scrolling.json");
+
+    dbg!(&config);
 
     let mut current_workspace: i8 = get_current_workspace().parse().expect("Not a valid number");
     match args.direction {
