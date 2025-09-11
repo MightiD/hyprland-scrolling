@@ -11,6 +11,8 @@ fn get_current_workspace() -> String {
         Err(e) => panic!("Invalid command output: {}", e)
     };
 
+    //this is a terrible way of doing this probably
+    //also 2nd item prolly wont work all the time
     String::from(s.split_whitespace().nth(2).unwrap())
 
 }
@@ -28,8 +30,8 @@ fn main() {
 
     Command::new("hyprctl")
         .arg("dispatch")
-        //.arg("movetoworkspace")
-        .arg("workspace")
+        //.arg("movetoworkspace") //move window to workspace
+        .arg("workspace") //move focus to workspace
         .arg(current_workspace.to_string())
         .spawn()
         .expect("Failed to run hyprctl");
